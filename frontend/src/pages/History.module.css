@@ -1,0 +1,15 @@
+.page {
+  padding: 16px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding-top: 80px;
+}
