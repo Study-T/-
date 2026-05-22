@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ["step-01-init", "step-02-discovery", "step-02b-vision", "step-02c-executive-summary"]
+stepsCompleted: ["step-01-init", "step-02-discovery", "step-02b-vision", "step-02c-executive-summary", "step-03-success"]
 classification:
   projectType: "web_app"
   domain: "ecommerce"
@@ -59,3 +59,64 @@ workflowType: 'prd'
 | 虚拟试穿 | FASHN VTON v1.5，备选 OOTDiffusion | Apache 2.0 |
 | 人体模型 | SMPL-X | 学术许可 |
 | GPU | NVIDIA T4/L4（16-24GB VRAM） | — |
+
+## Success Criteria
+
+### User Success
+
+- **数字人创建"爽点"**：用户拍照上传后 5 秒内看到自己 3D 数字人，95% 的人觉得"像我"（>= 4/5 满意度）
+- **试穿决策"解忧"**：看到试穿效果后能明确判断"买"或"不买"，不再需要买多件退多件
+- **首次完成率**：新用户从打开试穿到第一次看到效果，完成率 > 85%
+
+### Business Success
+
+| 指标 | 目标 | 时间 |
+|------|------|------|
+| 付费客户数 | 3-5 个 | 首年 |
+| 客户平台退货率降低 | ≥ 3 个百分点 | 交付后 3 个月 |
+| 终端用户试穿→加购转化率 | ≥ 15% | — |
+| 客户续约/扩展采购率 | ≥ 50% | 次年 |
+
+### Technical Success
+
+| 指标 | 目标 |
+|------|------|
+| 数字人生成耗时 | < 5 秒（P95） |
+| 试穿效果生成耗时 | < 8 秒（P95） |
+| 手机端 3D 渲染帧率 | ≥ 25 FPS（中端机） |
+| 桌面端 3D 渲染帧率 | ≥ 60 FPS |
+| GPU 并发任务数 | ≥ 4 并发不 OOM（T4） |
+| 单次试穿 GPU 成本 | < ¥0.10（T4/L4 实测后校准） |
+| 3D 模型首屏加载 | < 3 秒（4G 网络） |
+
+### Measurable Outcomes
+
+- v1 交付后 3 个月内，至少 1 个客户平台试穿功能上线并有真实用户数据
+- 终端用户试穿使用率（详情页→试穿点击率）> 5%
+
+## Product Scope
+
+### MVP — 上线就卖
+
+- 照片→3D 数字人生成（LHM）
+- 手动参数微调（7 个滑块）
+- 上装 + 下装虚拟试穿（FASHN VTON）
+- 360° 旋转 + 缩放查看
+- 私有化部署脚本 + 部署文档
+- 手机号登录 + 试穿历史
+
+### Growth — 提升竞争力
+
+- 鞋子试穿
+- 4 个骨骼动画 + 5 个场景切换
+- 多语言 UI 国际化
+- GPU 成本优化（量化、多任务并发）
+- 客户定制化适配（品牌色、UI 定制）
+
+### Vision — 护城河
+
+- 直播实时试穿（抖音/快手集成）
+- AI 尺码推荐（跨国家/地区尺码对照）
+- 社交试穿分享（图片/短视频）
+- 配饰试穿 + 商品走秀视频
+- 开源基础版 + 数据飞轮（脱敏试穿数据反哺）
