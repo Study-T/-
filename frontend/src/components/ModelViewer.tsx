@@ -89,10 +89,10 @@ export default function ModelViewer({ modelUrl, className }: ModelViewerProps) {
   useEffect(() => {
     if (!modelUrl || !sceneRef.current) return;
 
-    const loader = new THREE.GLTFLoader();
+    const loader = new GLTFLoader();
     loader.load(
       modelUrl,
-      (gltf) => {
+      (gltf: { scene: THREE.Object3D }) => {
         if (modelRef.current) {
           sceneRef.current?.remove(modelRef.current);
         }
@@ -102,7 +102,7 @@ export default function ModelViewer({ modelUrl, className }: ModelViewerProps) {
         modelRef.current = model;
       },
       undefined,
-      (err) => console.error("Failed to load model:", err)
+      (err: unknown) => console.error("Failed to load model:", err)
     );
 
     return () => {

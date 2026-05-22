@@ -79,6 +79,18 @@ export const api = {
 
   getTryOnTask: (id: number) => request<unknown>(`/tryon/${id}`),
 
+  getTryOnHistory: () => request<Array<unknown>>("/tryon"),
+
+  // Garments
+  getGarments: () => request<Array<unknown>>("/garments"),
+
+  createGarment: (category: string, imageUrl: string) =>
+    request<unknown>("/garments", {
+      method: "POST",
+      body: JSON.stringify({ category, image_url: imageUrl }),
+      headers: { "Content-Type": "application/json" },
+    }),
+
   // Upload
   upload: async (file: File) => {
     const form = new FormData();

@@ -40,6 +40,12 @@
   color: var(--color-text-muted);
 }
 
+.error {
+  color: var(--color-error);
+  font-size: 14px;
+  text-align: center;
+}
+
 .btn {
   width: 100%;
   padding: 14px;
