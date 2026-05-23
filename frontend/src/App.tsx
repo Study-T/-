@@ -8,6 +8,7 @@ const AvatarCreate = lazy(() => import("./pages/AvatarCreate"));
 const AvatarDetail = lazy(() => import("./pages/AvatarDetail"));
 const TryOn = lazy(() => import("./pages/TryOn"));
 const History = lazy(() => import("./pages/History"));
+const AvatarEdit = lazy(() => import("./pages/AvatarEdit"));
 
 function App() {
   return (
@@ -19,7 +20,8 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/avatar/create" element={<AvatarCreate />} />
             <Route path="/avatar/:id" element={<AvatarDetail />} />
-            <Route path="/tryon/:garmentId" element={<TryOn />} />
+            <Route path="/avatar/:id/edit" element={<AvatarEdit />} />
+            <Route path="/tryon" element={<TryOn />} />
             <Route path="/history" element={<History />} />
           </Route>
           <Route path="*" element={<Navigate to="/home" replace />} />

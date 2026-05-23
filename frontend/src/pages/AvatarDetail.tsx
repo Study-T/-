@@ -28,10 +28,11 @@ export default function AvatarDetail() {
         <ModelViewer modelUrl={avatar.model_url ?? undefined} />
       </div>
       <div className={styles.actions}>
-        <button className={styles.actionBtn} onClick={() => navigate(`/tryon`)}>
+        <button className={styles.actionBtn} onClick={() => navigate("/tryon")}>
           试穿衣服
         </button>
-        <button className={`${styles.actionBtn} ${styles.secondary}`}>
+        <button className={`${styles.actionBtn} ${styles.secondary}`}
+          onClick={() => navigate(`/avatar/${avatar.id}/edit`)}>
           编辑参数
         </button>
       </div>
