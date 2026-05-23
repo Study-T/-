@@ -21,11 +21,13 @@ async def create_tryon(
     avatar_result = await db.execute(
         select(Avatar).where(Avatar.id == req.avatar_id, Avatar.user_id == user_id)
     )
-    if not avatar_result.scalar_one_or_none():
+    avatar = avatar_result.scalar_one_or_none()
+    if not avatar:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="数字人不存在")
 
     garment_result = await db.execute(select(Garment).where(Garment.id == req.garment_id))
-    if not garment_result.scalar_one_or_none():
+    garment = garment_result.scalar_one_or_none()
+    if not garment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="服装不存在")
 
     task = TryOnTask(
@@ -35,6 +37,10 @@ async def create_tryon(
     db.add(task)
     await db.commit()
     await db.refresh(task)
+
+    from app.tasks.ai_tasks import run_tryon
+    run_tryon.delay(task.id, avatar.model_url or "", garment.image_url)
+
     return TryOnResponse.model_validate(task)
 
 

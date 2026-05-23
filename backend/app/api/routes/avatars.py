@@ -38,6 +38,10 @@ async def create_avatar(
     db.add(avatar)
     await db.commit()
     await db.refresh(avatar)
+
+    from app.tasks.ai_tasks import generate_avatar
+    generate_avatar.delay(avatar.id, req.photo_url)
+
     return AvatarResponse.model_validate(avatar)
 
 
