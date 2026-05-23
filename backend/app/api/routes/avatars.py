@@ -39,8 +39,11 @@ async def create_avatar(
     await db.commit()
     await db.refresh(avatar)
 
-    from app.tasks.ai_tasks import generate_avatar
-    generate_avatar.delay(avatar.id, req.photo_url)
+    try:
+        from app.tasks.ai_tasks import generate_avatar
+        generate_avatar.delay(avatar.id, req.photo_url)
+    except Exception:
+        pass  # Celery/Redis unavailable, task will be processed later
 
     return AvatarResponse.model_validate(avatar)
 

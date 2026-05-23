@@ -38,8 +38,11 @@ async def create_tryon(
     await db.commit()
     await db.refresh(task)
 
-    from app.tasks.ai_tasks import run_tryon
-    run_tryon.delay(task.id, avatar.model_url or "", garment.image_url)
+    try:
+        from app.tasks.ai_tasks import run_tryon
+        run_tryon.delay(task.id, avatar.model_url or "", garment.image_url)
+    except Exception:
+        pass  # Celery/Redis unavailable
 
     return TryOnResponse.model_validate(task)
 

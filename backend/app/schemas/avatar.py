@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -23,7 +25,6 @@ class AvatarResponse(BaseModel):
     smplx_params: Optional[dict] = None
     model_url: Optional[str] = None
     status: str
-    created_at: str
+    created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

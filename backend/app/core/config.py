@@ -3,15 +3,15 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     db_host: str = "localhost"
-    db_port: int = 5432
-    db_user: str = "digitalhuman"
-    db_password: str = "digitalhuman"
+    db_port: int = 3306
+    db_user: str = "root"
+    db_password: str = "root"
     db_name: str = "digitalhuman"
 
     @property
     def database_url(self) -> str:
         return (
-            f"postgresql+psycopg://{self.db_user}:{self.db_password}"
+            f"mysql+aiomysql://{self.db_user}:{self.db_password}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
 

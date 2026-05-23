@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 from typing import Optional
 
@@ -12,7 +14,6 @@ class GarmentResponse(BaseModel):
     category: str
     image_url: str
     metadata_: Optional[dict] = None
-    created_at: str
+    created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
