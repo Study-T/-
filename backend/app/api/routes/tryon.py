@@ -42,7 +42,14 @@ async def create_tryon(
         from app.tasks.ai_tasks import run_tryon
         run_tryon.delay(task.id, avatar.model_url or "", garment.image_url)
     except Exception:
-        pass  # Celery/Redis unavailable
+        import asyncio, threading
+        from app.tasks.ai_tasks import run_tryon_task
+        threading.Thread(
+            target=lambda: asyncio.run(
+                run_tryon_task(task.id, avatar.model_url or "", garment.image_url)
+            ),
+            daemon=True,
+        ).start()
 
     return TryOnResponse.model_validate(task)
 

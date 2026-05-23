@@ -43,7 +43,12 @@ async def create_avatar(
         from app.tasks.ai_tasks import generate_avatar
         generate_avatar.delay(avatar.id, req.photo_url)
     except Exception:
-        pass  # Celery/Redis unavailable, task will be processed later
+        import asyncio, threading
+        from app.tasks.ai_tasks import run_avatar_generation
+        threading.Thread(
+            target=lambda: asyncio.run(run_avatar_generation(avatar.id, req.photo_url)),
+            daemon=True,
+        ).start()
 
     return AvatarResponse.model_validate(avatar)
 

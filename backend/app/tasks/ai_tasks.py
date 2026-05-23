@@ -1,13 +1,41 @@
 import asyncio
-import json
+import time
 
 from celery import shared_task
 
-from app.models.avatar import AvatarStatus
-from app.models.tryon import TryOnStatus
+
+def _sync_update(update_type: str, obj_id: int, status: str, **kwargs):
+    """Synchronous fallback: uses pymysql directly, no event loop needed."""
+    import pymysql
+    from app.core.config import settings
+
+    table = "avatars" if update_type == "avatar" else "tryon_tasks"
+    conn = pymysql.connect(
+        host=settings.db_host, port=settings.db_port,
+        user=settings.db_user, password=settings.db_password,
+        database=settings.db_name, charset="utf8mb4",
+    )
+    try:
+        with conn.cursor() as cur:
+            if kwargs:
+                import json
+                if "smplx_params" in kwargs:
+                    kwargs["smplx_params"] = json.dumps(kwargs["smplx_params"])
+                set_clause = ", ".join(f"{k}=%s" for k in kwargs)
+                cur.execute(
+                    f"UPDATE {table} SET status=%s, {set_clause} WHERE id=%s",
+                    (status, *kwargs.values(), obj_id),
+                )
+            else:
+                cur.execute(f"UPDATE {table} SET status=%s WHERE id=%s", (status, obj_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 
-async def _update_avatar_status(avatar_id: int, status: str, **kwargs):
+# ---- Async versions (for Celery / Redis mode) ----
+
+async def _async_update_avatar(avatar_id: int, status: str, **kwargs):
     from app.core.database import async_session
     from app.models.avatar import Avatar
     from sqlalchemy import select
@@ -15,15 +43,14 @@ async def _update_avatar_status(avatar_id: int, status: str, **kwargs):
     async with async_session() as db:
         result = await db.execute(select(Avatar).where(Avatar.id == avatar_id))
         avatar = result.scalar_one_or_none()
-        if not avatar:
-            return
-        avatar.status = AvatarStatus(status)
-        for k, v in kwargs.items():
-            setattr(avatar, k, v)
-        await db.commit()
+        if avatar:
+            avatar.status = status
+            for k, v in kwargs.items():
+                setattr(avatar, k, v)
+            await db.commit()
 
 
-async def _update_tryon_status(task_id: int, status: str, **kwargs):
+async def _async_update_tryon(task_id: int, status: str, **kwargs):
     from app.core.database import async_session
     from app.models.tryon import TryOnTask
     from sqlalchemy import select
@@ -31,72 +58,35 @@ async def _update_tryon_status(task_id: int, status: str, **kwargs):
     async with async_session() as db:
         result = await db.execute(select(TryOnTask).where(TryOnTask.id == task_id))
         task = result.scalar_one_or_none()
-        if not task:
-            return
-        task.status = TryOnStatus(status)
-        for k, v in kwargs.items():
-            setattr(task, k, v)
-        await db.commit()
+        if task:
+            task.status = status
+            for k, v in kwargs.items():
+                setattr(task, k, v)
+            await db.commit()
 
+
+async def run_avatar_generation(avatar_id: int, photo_url: str):
+    _sync_update("avatar", avatar_id, "processing")
+    time.sleep(5)  # simulate GPU
+    _sync_update("avatar", avatar_id, "completed",
+                 smplx_params={"height": 1.70, "weight": 65, "shoulder_width": 0.42},
+                 model_url=f"s3://digital-human/avatars/{avatar_id}/model.glb")
+
+
+async def run_tryon_task(task_id: int, avatar_model_url: str, garment_url: str):
+    _sync_update("tryon", task_id, "processing")
+    time.sleep(8)  # simulate GPU
+    _sync_update("tryon", task_id, "completed",
+                 result_url=f"s3://digital-human/tryon/{task_id}/result.png")
+
+
+# ---- Celery task wrappers (requires Redis) ----
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=10)
 def generate_avatar(self, avatar_id: int, photo_url: str):
-    """
-    Celery task: call LHM service to generate 3D avatar.
-    In dev mode without GPU, simulates processing with delays.
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    async def run():
-        await _update_avatar_status(avatar_id, "processing")
-
-        # TODO: call LHM API — POST /generate {image_url: photo_url}
-        # For now, simulate 5-second processing
-        await asyncio.sleep(5)
-
-        smplx_params = {"height": 1.70, "weight": 65, "shoulder_width": 0.42}
-        model_url = f"s3://digital-human/avatars/{avatar_id}/model.glb"
-
-        await _update_avatar_status(
-            avatar_id, "completed",
-            smplx_params=smplx_params,
-            model_url=model_url,
-        )
-
-    try:
-        loop.run_until_complete(run())
-    except Exception as exc:
-        loop.run_until_complete(_update_avatar_status(avatar_id, "failed"))
-        raise self.retry(exc=exc)
-    finally:
-        loop.close()
+    asyncio.run(run_avatar_generation(avatar_id, photo_url))
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=10)
 def run_tryon(self, task_id: int, avatar_model_url: str, garment_url: str):
-    """
-    Celery task: call FASHN VTON service for virtual try-on.
-    In dev mode without GPU, simulates processing with delays.
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    async def run():
-        await _update_tryon_status(task_id, "processing")
-
-        # TODO: call FASHN VTON API — POST /tryon {person_image_url, garment_image_url}
-        # Then: UV texture mapping back to 3D model
-        await asyncio.sleep(8)
-
-        result_url = f"s3://digital-human/tryon/{task_id}/result.png"
-
-        await _update_tryon_status(task_id, "completed", result_url=result_url)
-
-    try:
-        loop.run_until_complete(run())
-    except Exception as exc:
-        loop.run_until_complete(_update_tryon_status(task_id, "failed"))
-        raise self.retry(exc=exc)
-    finally:
-        loop.close()
+    asyncio.run(run_tryon_task(task_id, avatar_model_url, garment_url))
